@@ -1,6 +1,10 @@
 # chatgpt_wechat_robot
 个人微信接入ChatGPT，实现和GPT机器人互动聊天。支持私聊回复和群聊艾特回复。
 
+### 此fork修改功能
+* 将模型修改为gpt-3.5-turbo
+* 兼容chat/completions接口的历史会话（TODO）
+
 ### 实现功能
 
 * GPT机器人模型热度可配置
