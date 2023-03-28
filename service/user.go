@@ -46,13 +46,12 @@ func (s *UserService) GetUserSessionContext() []gpt.Message {
 		return []gpt.Message{}
 	}
 
-	return history.([]gpt.Message)	
+	return history.([]gpt.Message)
 }
 
 // SetUserSessionContext 设置用户会话上下文文本，question用户提问内容，GTP回复内容
 func (s *UserService) SetUserSessionContext(question, reply string) {
 	history, _ := s.cache.Get(s.user.ID())
-	logger.Info("history: ", history)
 	// 如果history为空，初始化一个空的切片
 	if history == nil {
 		history = []gpt.Message{}
@@ -67,6 +66,8 @@ func (s *UserService) SetUserSessionContext(question, reply string) {
 		Role: "assistant",
 		Content: reply,
 	})
+
+	logger.Info("current history: ", history)
 
 	s.cache.Set(s.user.ID(), history, time.Second*config.LoadConfig().SessionTimeout)
 }
