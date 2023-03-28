@@ -54,14 +54,31 @@ type ChatGPTRequestBody struct {
 //-H "Content-Type: application/json"
 //-H "Authorization: Bearer your chatGPT key"
 //-d '{"model": "text-davinci-003", "prompt": "give me good song", "temperature": 0, "max_tokens": 7}'
-func Completions(msg string) (string, error) {
+func Completions(messages []Message) (string, error) {
 	var gptResponseBody *ChatGPTResponseBody
 	var resErr error
 	for retry := 1; retry <= 3; retry++ {
 		if retry > 1 {
 			time.Sleep(time.Duration(retry-1) * 100 * time.Millisecond)
 		}
-		gptResponseBody, resErr = httpRequestCompletions(msg, retry)
+
+		// 倒叙遍历messages, 如果content的长度之和超过了3000，则停止遍历，并且将没有超出的部分放入一个新的数组中
+		var newMessages []Message
+		var contentLength int
+		for i := len(messages) - 1; i >= 0; i-- {
+			contentLength += len(messages[i].Content)
+			if contentLength > 3000 {
+				break
+			}
+			newMessages = append(newMessages, messages[i])
+		}
+		// 将newMessages反转
+		for i := len(newMessages)/2 - 1; i >= 0; i-- {
+			opp := len(newMessages) - 1 - i
+			newMessages[i], newMessages[opp] = newMessages[opp], newMessages[i]
+		}
+
+		gptResponseBody, resErr = httpRequestCompletions(newMessages, retry)
 		if resErr != nil {
 			log.Printf("gpt request(%d) error: %v\n", retry, resErr)
 			continue
@@ -80,7 +97,7 @@ func Completions(msg string) (string, error) {
 	return reply, nil
 }
 
-func httpRequestCompletions(msg string, runtimes int) (*ChatGPTResponseBody, error) {
+func httpRequestCompletions(messages []Message, runtimes int) (*ChatGPTResponseBody, error) {
 	cfg := config.LoadConfig()
 	if cfg.ApiKey == "" {
 		return nil, errors.New("api key required")
@@ -99,12 +116,7 @@ func httpRequestCompletions(msg string, runtimes int) (*ChatGPTResponseBody, err
 		Model:            cfg.Model,
 		MaxTokens:        cfg.MaxTokens,
 		Temperature:      cfg.Temperature,
-		Messages: []Message{
-			{
-				Role:    "user",
-				Content: msg,
-			},
-		},
+		Messages: 		  messages,
 	}
 	requestData, err := json.Marshal(requestBody)
 	if err != nil {

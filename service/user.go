@@ -2,6 +2,8 @@ package service
 
 import (
 	"github.com/qingconglaixueit/wechatbot/config"
+	"github.com/qingconglaixueit/wechatbot/gpt"
+	"github.com/qingconglaixueit/wechatbot/pkg/logger"
 	"github.com/eatmoreapple/openwechat"
 	"github.com/patrickmn/go-cache"
 	"time"
@@ -9,7 +11,7 @@ import (
 
 // UserServiceInterface 用户业务接口
 type UserServiceInterface interface {
-	GetUserSessionContext() string
+	GetUserSessionContext() []gpt.Message
 	SetUserSessionContext(question, reply string)
 	ClearUserSessionContext()
 }
@@ -38,25 +40,33 @@ func (s *UserService) ClearUserSessionContext() {
 }
 
 // GetUserSessionContext 获取用户会话上下文文本
-func (s *UserService) GetUserSessionContext() string {
-	// 1.获取上次会话信息，如果没有直接返回空字符串
-	sessionContext, ok := s.cache.Get(s.user.ID())
+func (s *UserService) GetUserSessionContext() []gpt.Message {
+	history, ok := s.cache.Get(s.user.ID())
 	if !ok {
-		return ""
+		return []gpt.Message{}
 	}
 
-	// 2.如果字符长度超过等于4000，强制清空会话（超过GPT会报错）。
-	contextText := sessionContext.(string)
-	if len(contextText) >= 4000 {
-		s.cache.Delete(s.user.ID())
-	}
-
-	// 3.返回上文
-	return contextText
+	return history.([]gpt.Message)	
 }
 
 // SetUserSessionContext 设置用户会话上下文文本，question用户提问内容，GTP回复内容
 func (s *UserService) SetUserSessionContext(question, reply string) {
-	value := question + "\n" + reply
-	s.cache.Set(s.user.ID(), value, time.Second*config.LoadConfig().SessionTimeout)
+	history, _ := s.cache.Get(s.user.ID())
+	logger.Info("history: ", history)
+	// 如果history为空，初始化一个空的切片
+	if history == nil {
+		history = []gpt.Message{}
+	}
+
+	history = append(history.([]gpt.Message), gpt.Message{
+		Role: "user",
+		Content: question,
+	})
+
+	history = append(history.([]gpt.Message), gpt.Message{
+		Role: "assistant",
+		Content: reply,
+	})
+
+	s.cache.Set(s.user.ID(), history, time.Second*config.LoadConfig().SessionTimeout)
 }
