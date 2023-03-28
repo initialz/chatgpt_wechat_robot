@@ -123,19 +123,15 @@ func (h *UserMessageHandler) getRequestMessages() []gpt.Message {
 
 // buildUserReply 构建用户回复
 func buildUserReply(reply string) string {
-	// 1.去除空格问号以及换行号，如果为空，返回一个默认值提醒用户
-	textSplit := strings.Split(reply, "\n\n")
-	if len(textSplit) > 1 {
-		trimText := textSplit[0]
-		reply = strings.Trim(reply, trimText)
-	}
 	reply = strings.TrimSpace(reply)
 	if reply == "" {
 		return deadlineExceededText
 	}
 
 	// 2.如果用户有配置前缀，加上前缀
-	reply = config.LoadConfig().ReplyPrefix + "\n" + reply
+	if len(config.LoadConfig().ReplyPrefix) > 0 {
+		reply = config.LoadConfig().ReplyPrefix + "\n" + reply
+	}
 	reply = strings.Trim(reply, "\n")
 
 	// 3.返回拼接好的字符串
