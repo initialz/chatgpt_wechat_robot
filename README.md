@@ -3,7 +3,7 @@
 
 ### 此fork修改功能
 * 将模型修改为gpt-3.5-turbo
-* 兼容chat/completions接口的历史会话（TODO）
+* 兼容chat/completions接口的历史会话
 
 ### 实现功能
 
