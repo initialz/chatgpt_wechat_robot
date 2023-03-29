@@ -5,8 +5,6 @@
 # 4. 监控时间间隔为5秒
 
 #！/bin/bash
-# 启动机器人
-nohup go run main.go &> /tmp/chat.log &
 
 # 无限循环
 while true
